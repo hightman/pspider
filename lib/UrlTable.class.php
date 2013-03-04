@@ -363,10 +363,10 @@ class UrlParser implements HttpParser
 		{
 			// get baseUrl
 			$baseUrl = $req->getUrl();
-			if (preg_match('/<base\s+href=[\'"]?(.+?)[\s\'">]/i', $res->body, $match))
+			if (preg_match('/<base\s+href=[\'"]?(.*?)[\s\'">]/i', $res->body, $match))
 				$baseUrl = $this->resetUrl($match[1], $baseUrl);
 			// href="xxx", href='xxx'
-			if (preg_match_all('/href=([\'"])(.+?)\1/i', $res->body, $matches) > 0)
+			if (preg_match_all('/href=([\'"])(.*?)\1/i', $res->body, $matches) > 0)
 			{
 				foreach ($matches[2] as $url)
 				{
@@ -374,7 +374,7 @@ class UrlParser implements HttpParser
 				}
 			}
 			// href=xxx
-			if (preg_match_all('/href=(?![\'"])(.+?)[\s>]/i', $res->body, $matches) > 0)
+			if (preg_match_all('/href=(?![\'"])(.*?)[\s>]/i', $res->body, $matches) > 0)
 			{
 				foreach ($matches[1] as $url)
 				{
@@ -487,7 +487,7 @@ class UrlParser implements HttpParser
 
 	private function processUrl($url, $baseUrl, $rawUrl = null)
 	{
-		if (!strncasecmp($url, 'javascript:', 11))
+		if (!strncasecmp($url, 'javascript:', 11) || !strncasecmp($url, 'mailto:', 7))
 			return;
 		$url = $this->resetUrl($url, $baseUrl);
 		if ($this->isDisallow($url, $rawUrl === null ? $baseUrl : $rawUrl))
