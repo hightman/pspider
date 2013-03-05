@@ -197,7 +197,7 @@ class UrlTableMySQL extends mysqli implements UrlTable
  * 带 URL 提取功能的解析器基础类
  * 
  * 设置是 URL 过滤排除规则：
- * 规则语法支持局部字符串匹配，或正则匹配（必须是 / 或 # 开头）
+ * 规则语法支持局部字符串匹配，或正则匹配（必须是 # 开头）
  * 1. 若是默认允许的外站域名，则检测 disallowDomain 匹配一条则直接排除
  * 2. 若是默认不允许的外站域名，则检测 allowDomain，匹配任何一条则通过继续检测
  * 3. 检测 disallow 规则，匹配其中一条则立即排除
@@ -536,7 +536,7 @@ class UrlParser implements HttpParser
 
 	private function isRegexPattern($input)
 	{
-		if (strlen($input) > 2 && ($input[0] === '#' || $input[0] === '/'))
+		if (strlen($input) > 2 && $input[0] === '#')
 		{
 			for ($i = strlen($input) - 1; $i > 1; $i--)
 			{
