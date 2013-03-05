@@ -234,7 +234,7 @@ class UrlParser implements HttpParser
 		$this->_timeBegin = time();
 		$this->_numAdd = $this->_numUpdate = $this->_numFilter = 0;
 		// apply default filters for extending
-		$this->filter();
+		$this->defaultFilter();
 	}
 
 	public function __destruct()
@@ -253,7 +253,7 @@ class UrlParser implements HttpParser
 	/**
 	 * 扩展该类时在此应用默认的 URL 过滤规则
 	 */
-	public function filter()
+	public function defaultFilter()
 	{
 		
 	}

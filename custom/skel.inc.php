@@ -67,9 +67,9 @@ class UrlParserCustom extends UrlParser
 	 * allowDomain(), disallowDomain()
 	 * allow(), disallow(), disallowExt()
 	 */
-	public function filter()
+	public function defaultFilter()
 	{
-		parent::filter();
+		parent::defaultFilter();
 		/// --- custom filter BEGIN ---
 		$this->followExternal(false);
 		$this->disallow('.php?q=');
