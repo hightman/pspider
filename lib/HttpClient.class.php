@@ -989,7 +989,7 @@ class HttpRequest extends HttpBase
 				$pa['path'] = '/';
 			// host header
 			if (!$this->hasHeader('host'))
-				$this->setHeader('host', $pa['host']);
+				$this->setHeader('host', strtolower($pa['host']));
 			// basic auth
 			if (isset($pa['user']) && isset($pa['pass']))
 				$this->applyBasicAuth($pa['user'], $pa['pass']);
