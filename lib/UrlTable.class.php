@@ -208,11 +208,8 @@ class UrlTableMySQL extends mysqli implements UrlTable
 class UrlParser implements HttpParser
 {
 	private $_timeBegin, $_numAdd, $_numUpdate, $_numFilter;
-	private $_followExternal = false;
-	private $_disallowDomain = array();
-	private $_allowDomain = array();
-	private $_disallow = array();
-	private $_allow = array();
+	private $_followExternal;
+	private $_disallowDomain, $_allowDomain, $_disallow, $_allow;
 	private $_disallowExt = array(
 		'.tar' => true, '.gz' => true, '.tgz' => true, '.zip' => true, '.Z' => true, '.7z' => true,
 		'.rpm' => true, '.deb' => true, '.ps' => true, '.dvi' => true, '.pdf' => true, '.smi' => true,
@@ -234,6 +231,7 @@ class UrlParser implements HttpParser
 		$this->_timeBegin = time();
 		$this->_numAdd = $this->_numUpdate = $this->_numFilter = 0;
 		// apply default filters for extending
+		$this->resetFilter();
 		$this->defaultFilter();
 	}
 
@@ -256,6 +254,18 @@ class UrlParser implements HttpParser
 	public function defaultFilter()
 	{
 		
+	}
+
+	/**
+	 * 重置所有过滤规则，但不包含后缀过滤规则
+	 */
+	public function resetFilter()
+	{
+		$this->_followExternal = false;
+		$this->_disallowDomain = array();
+		$this->_allowDomain = array();
+		$this->_disallow = array();
+		$this->_allow = array();
 	}
 
 	/** 	 
