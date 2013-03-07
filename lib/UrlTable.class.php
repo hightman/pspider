@@ -495,15 +495,25 @@ class UrlParser implements HttpParser
 		return $url;
 	}
 
-	private function processUrl($url, $baseUrl, $rawUrl = null)
+	/**
+	 * @return mixed
+	 */
+	protected function processUrl($url, $baseUrl, $rawUrl = null)
 	{
 		if (!strncasecmp($url, 'javascript:', 11) || !strncasecmp($url, 'mailto:', 7))
-			return;
+			return 'SKIP';
 		$url = $this->resetUrl($url, $baseUrl);
 		if ($this->isDisallow($url, $rawUrl === null ? $baseUrl : $rawUrl))
+		{
 			$this->_numFilter++;
-		else if ($this->_ut->addUrl($url))
+			return 'FILTER';
+		}
+		if ($this->_ut->addUrl($url))
+		{
 			$this->_numAdd++;
+			return 'ADD';
+		}
+		return 'SKIP';
 	}
 
 	private function saveMatchRule(&$array, $rule)
