@@ -551,11 +551,13 @@ class HttpProcesser
 		{
 			if ($res->body === '')
 				$res->setHeader('connection', 'close');
-			$buf = $conn->read();
-			if (!is_string($buf))
+			if (($buf = $conn->read()) === false)
 				return $this->finish();
-			HttpClient::debug('read streamBody()=', strlen($buf));
-			$res->body .= $buf;
+			if (is_string($buf))
+			{
+				HttpClient::debug('read streamBody()=', strlen($buf));
+				$res->body .= $buf;
+			}
 		}
 	}
 
