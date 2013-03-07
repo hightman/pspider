@@ -500,7 +500,7 @@ class HttpProcesser
 				HttpClient::debug('read chunk line: ', $line);
 				if (($pos = strpos($line, ';')) !== false)
 					$line = substr($line, 0, $pos);
-				$size = hexdec(trim($line));
+				$size = intval(hexdec(trim($line)));
 				if ($size <= 0)
 				{
 					while ($line = $conn->getLine()) // tail header
