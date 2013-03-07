@@ -371,6 +371,10 @@ class HttpProcesser
 		$this->finished = true;
 		if ($type === 'BROKEN')
 			$this->res->error = HttpConn::getLastError();
+		// gzip decode
+		$encoding = $this->res->getHeader('content-encoding');
+		if ($encoding !== null && strstr($encoding, 'gzip'))
+			$this->res->body = HttpClient::gzdecode($this->res->body);
 		// parser
 		$this->res->timeCost = microtime(true) - $this->timeBegin;
 		$this->cli->runParser($this->res, $this->req, $this->key);
@@ -1139,6 +1143,11 @@ class HttpClient extends HttpBase
 			$key = self::$_processKey === null ? '' : '[' . self::$_processKey . '] ';
 			echo '[DEBUG] ' . date('H:i:s') . ' ' . $key . implode('', func_get_args()) . self::CRLF;
 		}
+	}
+
+	public static function gzdecode($data)
+	{
+		return gzinflate(substr($data, 10, -8));
 	}
 
 	public function __construct($p = null)
