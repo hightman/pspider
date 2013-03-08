@@ -500,7 +500,7 @@ class UrlParser implements HttpParser
 	 */
 	protected function processUrl($url, $baseUrl, $rawUrl = null)
 	{
-		if (!strncasecmp($url, 'javascript:', 11) || !strncasecmp($url, 'mailto:', 7))
+		if (substr($url, 0, 1) === '#' || !strncasecmp($url, 'javascript:', 11) || !strncasecmp($url, 'mailto:', 7))
 			return 'SKIP';
 		$url = $this->resetUrl($url, $baseUrl);
 		if ($this->isDisallow($url, $rawUrl === null ? $baseUrl : $rawUrl))
