@@ -517,22 +517,9 @@ class HttpProcesser
 					}
 					return $this->finish();
 				}
-				$size = $size + 2; // add CRLF
-				$buf = $conn->read($size);
-				if ($buf === false)
-					return $this->finish('BROKEN');
-				if (is_string($buf))
-				{
-					HttpClient::debug('read chunkBody(', $size, ')=', strlen($buf));
-					$res->body .= $buf;
-					if (strlen($buf) < $size)
-					{
-						$this->chunkLeft = $size - strlen($buf);
-						return;
-					}
-					// strip CRLF
-					$res->body = substr($res->body, 0, -2);
-				}
+				// add CRLF, save to chunkLeft for next loop
+				$this->chunkLeft = $size + 2; // add CRLF
+				return;
 			}
 		}
 		else if ($length !== null)
