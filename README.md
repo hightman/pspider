@@ -65,3 +65,4 @@ $results = $http->get(array(
 
 ```
 
+> 注意：您可以通过 HttpClient::debug('open'); 会详细打印很多信息。
