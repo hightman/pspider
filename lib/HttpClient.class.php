@@ -343,11 +343,7 @@ class HttpProcesser
 				$this->finish();
 			}
 			else if ($this->conn !== null)
-			{
-				$buf = $this->getRequestBuf();
-				$this->conn->addWriteData($buf);
-				HttpClient::debug('prep request buf(', strlen($buf) . ') = \'', substr($buf, 0, strpos($buf, "\r")), ' ...\'');
-			}
+				$this->conn->addWriteData($this->getRequestBuf());
 		}
 		return $this->conn;
 	}
@@ -411,6 +407,7 @@ class HttpProcesser
 					$req->setHeader('referer', $prevUrl);
 				if ($req->getMethod() !== 'HEAD')
 					$req->setMethod('GET');
+				$req->clearCookie();
 				$req->setHeader('host', null);
 				$req->setHeader('x-server-ip', null);
 				// reset response
@@ -455,8 +452,8 @@ class HttpProcesser
 				$cookie = $this->parseCookieLine($line);
 				if ($cookie !== false)
 				{
-					$this->res->setCookie($cookie['name'], $cookie['value']);
-					$this->cli->setCookie($cookie['name'], $cookie['value'], $cookie['expires'], $cookie['domain'], $cookie['path']);
+					$this->res->setRawCookie($cookie['name'], $cookie['value']);
+					$this->cli->setRawCookie($cookie['name'], $cookie['value'], $cookie['expires'], $cookie['domain'], $cookie['path']);
 				}
 			}
 			else
@@ -557,8 +554,8 @@ class HttpProcesser
 	private function parseCookieLine($line)
 	{
 		$now = time();
-		$cookie = array('name' => '', 'value' => '', 'expires' => null, 'path' => '/', 'domain' => $host);
-		$cookie['domain'] = $this->req->getUrlParam('host');
+		$cookie = array('name' => '', 'value' => '', 'expires' => null, 'path' => '/');
+		$cookie['domain'] = $this->req->getHeader('host');
 		$tmpa = explode(';', substr($line, 12));
 		foreach ($tmpa as $tmp)
 		{
@@ -568,8 +565,8 @@ class HttpProcesser
 			$v = trim(substr($tmp, $pos + 1));
 			if ($cookie['name'] === '')
 			{
-				$cookie['name'] = rawurldecode($k);
-				$cookie['value'] = rawurldecode($v);
+				$cookie['name'] = $k;
+				$cookie['value'] = $v;
 			}
 			else
 			{
@@ -587,7 +584,7 @@ class HttpProcesser
 						|| substr($cookie['domain'], $pos, 1) === '.'
 						|| substr($cookie['domain'], $pos + 1, 1) === '.')
 					{
-						$cookie[k] = $v;
+						$cookie[$k] = $v;
 					}
 				}
 				else if (isset($cookie[$k]))
@@ -613,12 +610,14 @@ class HttpProcesser
 		$header .= ' HTTP/1.1' . HttpClient::CRLF;
 		// body (must call prior than headers)
 		$body = $req->getBody();
+		HttpClient::debug('request body(', strlen($body) . ')');
 		// header
 		$cli->applyCookie($req);
 		foreach (array_merge($cli->getHeader(null), $req->getHeader(null)) as $key => $value)
 		{
 			$header .= $this->formatHeaderLine($key, $value);
 		}
+		HttpClient::debug('request header: ', HttpClient::CRLF, $header);
 		return $header . HttpClient::CRLF . $body;
 	}
 
@@ -713,7 +712,7 @@ class HttpBase
 		return isset($this->_headers[strtolower($key)]);
 	}
 
-	public function setCookie($key, $value, $expires = null, $domain = '-', $path = '/')
+	public function setRawCookie($key, $value, $expires = null, $domain = '-', $path = '/')
 	{
 		$domain = strtolower($domain);
 		if (substr($domain, 0, 1) === '.')
@@ -727,6 +726,11 @@ class HttpBase
 			unset($list[$key]);
 		else
 			$list[$key] = array('value' => $value, 'expires' => $expires);
+	}
+
+	public function setCookie($key, $value)
+	{
+		$this->setRawCookie($key, rawurlencode($value));
 	}
 
 	public function clearCookie($domain = '-', $path = null)
@@ -756,8 +760,8 @@ class HttpBase
 				{
 					if ($key === null)
 						$cookies = array_merge($list, $cookies);
-					else if (isset($list[$key]))
-						return $list[$key]['value'];
+					else if (isset($list[$key])) // single value
+						return rawurldecode($list[$key]['value']);
 				}
 			}
 			if (($pos = strpos($domain, '.', 1)) === false)
@@ -780,6 +784,7 @@ class HttpBase
 			$cookies = array_merge($cookies, $req->fetchCookieToSend($host, $path));
 
 		// add to header
+		$req->setHeader('cookie', null);
 		foreach (array_chunk(array_values($cookies), 3) as $chunk)
 		{
 			$req->addHeader('cookie', implode('; ', $chunk));
@@ -809,7 +814,7 @@ class HttpBase
 					foreach ($list as $k => $v)
 					{
 						if (!isset($cookies[$k]) && ($v['expires'] === null || $v['expires'] > $now))
-							$cookies[$k] = rawurlencode($k) . '=' . rawurlencode($v['value']);
+							$cookies[$k] = $k . '=' . $v['value'];
 					}
 				}
 			}
@@ -844,7 +849,8 @@ class HttpBase
 
 	protected function loadCookie($fpath)
 	{
-		$this->_cookies = unserialize(file_get_contents($fpath));
+		if (file_exists($fpath))
+			$this->_cookies = unserialize(file_get_contents($fpath));
 	}
 
 	protected function saveCookie($fpath)
@@ -997,17 +1003,19 @@ class HttpRequest extends HttpBase
 			}
 			if (!isset($pa['path']))
 				$pa['path'] = '/';
-			// host header
-			if (!$this->hasHeader('host'))
-				$this->setHeader('host', strtolower($pa['host']));
 			// basic auth
 			if (isset($pa['user']) && isset($pa['pass']))
 				$this->applyBasicAuth($pa['user'], $pa['pass']);
 			// convert host to IP address
 			$port = isset($pa['port']) ? intval($pa['port']) : ($pa['scheme'] === 'https' ? 443 : 80);
-			$pa['host'] = $this->hasHeader('x-server-ip') ?
+			$pa['ip'] = $this->hasHeader('x-server-ip') ?
 				$this->getHeader('x-server-ip') : self::getIpAddr($pa['host']);
-			$pa['conn'] = ($pa['scheme'] === 'https' ? 'ssl' : 'tcp') . '://' . $pa['host'] . ':' . $port;
+			$pa['conn'] = ($pa['scheme'] === 'https' ? 'ssl' : 'tcp') . '://' . $pa['ip'] . ':' . $port;
+			// host header
+			if (!$this->hasHeader('host'))
+				$this->setHeader('host', strtolower($pa['host']));
+			else
+				$pa['host'] = $this->getHeader('host');
 			$this->_urlParams = $pa;
 		}
 		return $this->_urlParams;
@@ -1300,7 +1308,7 @@ class HttpClient extends HttpBase
 	public function __destruct()
 	{
 		if ($this->_cookiePath !== null)
-			$this->saveCookie();
+			$this->saveCookie($this->_cookiePath);
 	}
 
 	protected function applyDefaultHeader()
