@@ -392,7 +392,7 @@ class HttpProcesser
 			{
 				HttpClient::debug('redirect to \'', $location, '\'');
 				$req = $this->req;
-				if (!preg_match('/^http[s]?:\/\//i', $location))
+				if (!preg_match('/^https?:\/\//i', $location))
 				{
 					$pa = $req->getUrlParams();
 					$url = $pa['scheme'] . '://' . $pa['host'];
@@ -886,6 +886,21 @@ class HttpResponse extends HttpBase
 		$this->timeCost = 0;
 		$this->clearHeader();
 		$this->clearCookie();
+	}
+
+	/**
+	 * 在 HttpParser 回调方法或函数中使用，可在处理完后继续强制处理这个新的 url
+	 * @param string $url
+	 */
+	public function redirect($url)
+	{
+		// 检查是否已经需要重定向
+		if (($this->status === 301 || $this->status === 302) && ($this->hasHeader('location')))
+			return;
+		// FIXME: 临时解决方案 ^-^
+		$this->numRedirected--;
+		$this->status = 302;
+		$this->setHeader('location', $url);
 	}
 }
 

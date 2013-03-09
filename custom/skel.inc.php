@@ -33,7 +33,7 @@ class UrlTableCustom extends UrlTableMySQL
 		$host = 'localhost';
 		$user = 'root';
 		$pass = '';
-		$dbname = 'xiaoshuogs';
+		$dbname = 'test';
 		/// --- custom setting END
 
 		parent::__construct($host, $user, $pass, $dbname);
