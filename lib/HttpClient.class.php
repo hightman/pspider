@@ -360,13 +360,15 @@ class HttpProcesser
 	}
 
 	/** 	
-	 * @param string $type NORMAL, BROKEN, DESTRUCT
+	 * @param string $type NORMAL, BROKEN, TIMEOUT
 	 */
 	public function finish($type = 'NORMAL')
 	{
 		$this->finished = true;
 		if ($type === 'BROKEN')
 			$this->res->error = HttpConn::getLastError();
+		else if ($type !== 'NORMAL')
+			$this->res->error = ucfirst(strtolower($type));
 		// gzip decode
 		$encoding = $this->res->getHeader('content-encoding');
 		if ($encoding !== null && strstr($encoding, 'gzip'))
@@ -379,7 +381,7 @@ class HttpProcesser
 		{
 			// close conn
 			$close = $this->res->getHeader('connection');
-			$this->conn->close($type === 'BROKEN' || !strcasecmp($close, 'close'));
+			$this->conn->close($type !== 'NORMAL' || !strcasecmp($close, 'close'));
 			$this->conn = null;
 			// redirect
 			if (($this->res->status === 301 || $this->res->status === 302)
@@ -1134,7 +1136,7 @@ class HttpClient extends HttpBase
 	const PACKAGE = 'HttpClient';
 	const VERSION = '3.0-beta';
 	const CRLF = "\r\n";
-	protected $_cookiePath, $_parser;
+	protected $_cookiePath, $_parser, $_timeout;
 	private static $_debugOpen = false;
 	private static $_processKey;
 
@@ -1168,6 +1170,19 @@ class HttpClient extends HttpBase
 		$this->setParser($p);
 	}
 
+	/**
+	 * 设置最大的网络读取最大等待时间
+	 * @param int $sec 秒数，支持小数点
+	 */
+	public function setTimeout($sec)
+	{
+		$this->_timeout = floatval($sec);
+	}
+
+	/**
+	 * 设置 Cookie 数据的存取路径
+	 * @param string $fpath
+	 */
 	public function setCookiePath($fpath)
 	{
 		$this->_cookiePath = $fpath;
@@ -1242,13 +1257,15 @@ class HttpClient extends HttpBase
 		while (true)
 		{
 			// build select fds
-			$rfds = $wfds = array();
-			$xfs = null;
+			$rfds = $wfds = $xrec = array();
+			$xfds = null;
 			foreach ($recs as $rec) /* @var $rec HttpProcesser */
 			{
 				self::$_processKey = $rec->key;
 				if ($rec->finished || !($conn = $rec->getConn($this)))
 					continue;
+				if ($this->_timeout !== null)
+					$xrec[] = $rec;
 				$rfds[] = $conn->getSock();
 				if ($conn->hasDataToWrite())
 					$wfds[] = $conn->getSock();
@@ -1259,7 +1276,14 @@ class HttpClient extends HttpBase
 
 			// select sockets
 			self::debug('stream_select(rfds[', count($rfds), '], wfds[', count($wfds), ']) ...');
-			$num = stream_select($rfds, $wfds, $xfds, null);
+			if ($this->_timeout === null)
+				$num = stream_select($rfds, $wfds, $xfds, null);
+			else
+			{
+				$sec = intval($this->_timeout);
+				$usec = intval(($this->_timeout - $sec) * 1000000);
+				$num = stream_select($rfds, $wfds, $xfds, $sec, $usec);
+			}
 			self::debug('select result: ', $num === false ? 'false' : $num);
 			if ($num === false)
 			{
@@ -1285,6 +1309,15 @@ class HttpClient extends HttpBase
 					$rec = $conn->getExArg(); /* @var $rec HttpProccessRec */
 					self::$_processKey = $rec->key;
 					$rec->recv();
+				}
+			}
+			else
+			{
+				// force to close request
+				foreach ($xrec as $rec)
+				{
+					self::$_processKey = $rec->key;
+					$rec->finish('TIMEOUT');
 				}
 			}
 		}
