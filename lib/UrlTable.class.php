@@ -210,6 +210,7 @@ class UrlParser implements HttpParser
 	private $_timeBegin, $_numAdd, $_numUpdate, $_numFilter;
 	private $_followExternal;
 	private $_disallowDomain, $_allowDomain, $_disallow, $_allow;
+	private $_allowRank;
 	private $_disallowExt = array(
 		'.tar' => true, '.gz' => true, '.tgz' => true, '.zip' => true, '.Z' => true, '.7z' => true,
 		'.rpm' => true, '.deb' => true, '.ps' => true, '.dvi' => true, '.pdf' => true, '.smi' => true,
@@ -266,6 +267,7 @@ class UrlParser implements HttpParser
 		$this->_allowDomain = array();
 		$this->_disallow = array();
 		$this->_allow = array();
+		$this->_allowRank = array();
 	}
 
 	/** 	 
@@ -302,10 +304,13 @@ class UrlParser implements HttpParser
 
 	/**
 	 * @param string $rule 允许的 URL 规则，支持正则表达式
+	 * @param int $rank 匹配此规则的 URL 的权重值
 	 */
-	public function allow($rule)
+	public function allow($rule, $rank = null)
 	{
 		$this->saveMatchRule($this->_allow, $rule);
+		if ($rank !== null)
+			$this->_allowRank[$rule] = intval($rank);
 	}
 
 	/**
@@ -405,9 +410,10 @@ class UrlParser implements HttpParser
 	/**
 	 * @param string $url
 	 * @param string $rawUrl 原先的开始页面 URL，用于计算是否为站外
+	 * @param string &$rank
 	 * @return boolean 是否 URL 符合过滤规则需要排除，需要排除返回 true
 	 */
-	public function isDisallow($url, $rawUrl = null)
+	public function isDisallow($url, $rawUrl = null, &$rank = null)
 	{
 		// get domain
 		if (($pos1 = strpos($url, '://')) === false)
@@ -430,7 +436,7 @@ class UrlParser implements HttpParser
 		if ($this->isMatchRule($this->_disallow, $url))
 			return true;
 		// allow
-		if (count($this->_allow) > 0 && !$this->isMatchRule($this->_allow, $url))
+		if (count($this->_allow) > 0 && !$this->isMatchRule($this->_allow, $url, $rank))
 			return true;
 		// dislaowExt
 		if (($pos1 = strpos($url, '?')) === false)
@@ -503,12 +509,13 @@ class UrlParser implements HttpParser
 		if (substr($url, 0, 1) === '#' || !strncasecmp($url, 'javascript:', 11) || !strncasecmp($url, 'mailto:', 7))
 			return 'SKIP';
 		$url = $this->resetUrl($url, $baseUrl);
-		if ($this->isDisallow($url, $rawUrl === null ? $baseUrl : $rawUrl))
+		$rank = 0;
+		if ($this->isDisallow($url, $rawUrl === null ? $baseUrl : $rawUrl, $rank))
 		{
 			$this->_numFilter++;
 			return 'FILTER';
 		}
-		if ($this->_ut->addUrl($url))
+		if ($this->_ut->addUrl($url, $rank))
 		{
 			$this->_numAdd++;
 			return 'ADD';
@@ -526,19 +533,22 @@ class UrlParser implements HttpParser
 			array_unshift($array, $rule);
 	}
 
-	private function isMatchRule($rules, $input)
+	private function isMatchRule($rules, $input, &$rank = null)
 	{
 		foreach ($rules as $rule)
 		{
 			if (ord($rule[0]) !== 0xff)
-			{
-				if (stristr($input, $rule))
-					return true;
-			}
+				$matched = stristr($input, $rule) !== false;
 			else
 			{
-				if (preg_match(substr($rule, 1), $input))
-					return true;
+				$rule = substr($rule, 1);
+				$matched = preg_match($rule, $input) > 0;
+			}
+			if ($matched === true)
+			{
+				if (isset($this->_allowRank[$rule]))
+					$rank = $this->_allowRank[$rule];
+				return true;
 			}
 		}
 		return false;
