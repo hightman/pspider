@@ -120,7 +120,7 @@ class HttpConn
 		if ($realClose === true)
 		{
 			HttpClient::debug('close conn \'', $this->conn, '\': ', $this->sock);
-			$this->flag &= ~FLAG_OPENED;
+			$this->flag &= ~self::FLAG_OPENED;
 			@fclose($this->sock);
 			$this->delSockRef();
 			$this->sock = false;
