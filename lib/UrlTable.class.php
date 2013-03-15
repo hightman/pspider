@@ -397,7 +397,7 @@ class UrlParser implements HttpParser
 				}
 			}
 		}
-		else if ($res->status === 301 || $this->status === 302)
+		else if ($res->status === 301 || $res->status === 302)
 		{
 			$url = $this->resetUrl($res->getHeader('location'), $req->getUrl());
 			$res->setHeader('location', $url); // overwrite formated url
