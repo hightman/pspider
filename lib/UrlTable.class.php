@@ -467,18 +467,18 @@ class UrlParser implements HttpParser
 			{
 				if (substr($url, 0, 1) === '/')
 				{
-					$pos = strpos($baseUrl, '/', 8);
+					$pos = @strpos($baseUrl, '/', 8);
 					$url = ($pos === false ? $baseUrl : substr($baseUrl, 0, $pos)) . $url;
 				}
 				else
 				{
-					$pos = strrpos($baseUrl, '/', 8);
+					$pos = @strrpos($baseUrl, '/', 8);
 					$url = ($pos === false ? $baseUrl . '/' : substr($baseUrl, 0, $pos + 1)) . $url;
 				}
 			}
 		}
 		// 统一 URL 格式，顶级网址以 / 结尾，去除 # 后的锚点
-		if (strpos($url, '/', 8) === false)
+		if (@strpos($url, '/', 8) === false)
 			$url .= '/';
 		if (($pos = strrpos($url, '#')) !== false)
 			$url = substr($url, 0, $pos);
