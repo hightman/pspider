@@ -422,7 +422,7 @@ class UrlParser implements HttpParser
 		$pos2 = strpos($url, '/', $pos1);
 		$domain = $pos2 === false ? substr($url, $pos1) : substr($url, $pos1, $pos2 - $pos1);
 		// external domain
-		if ($rawUrl !== null && !strstr($rawUrl, $domain))
+		if ($rawUrl !== null && !@strstr($rawUrl, $domain))
 		{
 			// disallow domain
 			if ($this->_followExternal && $this->isMatchRule($this->_disallowDomain, $domain))
@@ -459,6 +459,8 @@ class UrlParser implements HttpParser
 	public function resetUrl($url, $baseUrl = null)
 	{
 		// 开头处理
+		if (!strncasecmp($url, 'http://http://', 14))
+			$url = substr($url, 7);
 		if (strncasecmp($url, 'http://', 7) && strncasecmp($url, 'https://', 8))
 		{
 			if ($baseUrl === null)
