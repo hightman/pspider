@@ -108,21 +108,26 @@ class UrlTableMySQL extends mysqli implements UrlTable
 		$sql .= 'WHERE select_time < ' . ($now - $duration) . ' '; // expired
 		$sql .= 'OR (select_time > update_time AND select_time < ' . ($now - 300) . ') '; // failed
 		$sql .= 'ORDER BY score DESC LIMIT ' . intval($limit);
+		($fd = @fopen(sys_get_temp_dir() . DIRECTORY_SEPARATOR . __CLASS__ . '.lock', 'w')) && flock($fd, LOCK_EX);
 		if (($res = $this->query($sql)) === false)
-			return false;
-		$ret = $ids = array();
-		while ($row = $res->fetch_assoc())
+			$ret = false;
+		else
 		{
-			$ids[] = $row['id'];
-			$ret[] = $row['url'];
+			$ret = $ids = array();
+			while ($row = $res->fetch_assoc())
+			{
+				$ids[] = $row['id'];
+				$ret[] = $row['url'];
+			}
+			$res->free();
+			if (count($ids) > 0)
+			{
+				$sql = 'UPDATE ' . $this->_table . ' SET select_time = ' . $now . ' ';
+				$sql .= 'WHERE id IN (\'' . implode('\', \'', $ids) . '\')';
+				$this->query($sql);
+			}
 		}
-		$res->free();
-		if (count($ids) > 0)
-		{
-			$sql = 'UPDATE ' . $this->_table . ' SET select_time = ' . $now . ' ';
-			$sql .= 'WHERE id IN (\'' . implode('\', \'', $ids) . '\')';
-			$this->query($sql);
-		}
+		$fd && flock($fd, LOCK_UN) && fclose($fd);
 		return $ret;
 	}
 
