@@ -1046,7 +1046,7 @@ class HttpRequest extends HttpBase
 			return $data;
 		if (count($this->_postFiles) > 0)
 		{
-			$boundary = md5($url . microtime());
+			$boundary = md5($this->_rawUrl . microtime());
 			foreach ($this->_postFields as $k => $v)
 			{
 				$data .= '--' . $boundary . HttpClient::CRLF . 'Content-Disposition: form-data; name="' . $k . '"'
@@ -1124,7 +1124,7 @@ class HttpRequest extends HttpBase
 	// apply basic auth
 	private function applyBasicAuth($user, $pass)
 	{
-		$this->setHeader('authorization', 'Basic ' . base64_encode($pa['user'] . ':' . $pa['pass']));
+		$this->setHeader('authorization', 'Basic ' . base64_encode($user . ':' . $pass));
 	}
 }
 
@@ -1229,7 +1229,7 @@ class HttpClient extends HttpBase
 		{
 			$req = new HttpRequest($url);
 			$req->setMethod('HEAD');
-			return $this->process($req, $cb);
+			return $this->process($req);
 		}
 		$reqs = array();
 		foreach ($url as $key => $_url)
