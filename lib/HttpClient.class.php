@@ -229,7 +229,7 @@ class HttpConn
 		if ($this->sock === false)
 		{
 			HttpClient::debug($repeat ? 're' : '', 'open \'', $this->conn, '\' failed: ', $error);
-			self::$_connError = $error;
+			self::$_lastError = $error;
 		}
 		else
 		{
