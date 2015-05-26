@@ -16,13 +16,13 @@ define('PSP_CRAWL_PERIOD', 3600);
  * 设置 MySQL 参数，要求带有 _urls 表，并采用以下结构：
   CREATE TABLE `_urls` (
   `id` varchar(32) NOT NULL COMMENT 'md5 hash of URL',
-  `url` text NOT NULL,
-  `rank` smallint(6) NOT NULL COMMENT 'process prior level',
-  `status` smallint(6) NOT NULL COMMENT 'last http response status',
-  `select_time` bigint(20) NOT NULL COMMENT 'last process time',
-  `update_time` bigint(20) NOT NULL COMMENT 'last update time',
+  `url` text,
+  `rank` smallint NOT NULL default '0' COMMENT 'process prior level',
+  `status` smallint NOT NULL default '0' COMMENT 'last http response status',
+  `select_time` int unsigned NOT NULL default '0' COMMENT 'last process time',
+  `update_time` int unsigned NOT NULL default '0' COMMENT 'last update time',
   PRIMARY KEY (`id`)
-  ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COMMENT='url table for pspider';
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='url table for pspider';
  */
 class UrlTableCustom extends UrlTableMySQL
 {
