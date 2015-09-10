@@ -8,15 +8,13 @@ ini_set('display_errors', 'On');
 ini_set('memory_limit', '1024M');
 
 // parse options
-if (php_sapi_name() !== 'cli')
-{
+if (php_sapi_name() !== 'cli') {
 	echo "ERROR: The script can only be run under cli mode.\n";
 	exit(-1);
 }
 
 $options = getopt('c:n:u:p:q:h');
-if (isset($options['h']) || !isset($options['c']))
-{
+if (isset($options['h']) || !isset($options['c'])) {
 	echo <<<EOF
 PSPider - PHP Spider (by hightman)
 
@@ -35,18 +33,17 @@ EOF;
 }
 
 $file = __DIR__ . '/custom/' . $options['c'] . '.inc.php';
-if (!file_exists($file))
-{
+if (!file_exists($file)) {
 	echo "ERROR: Custom file dose not exists '$file'.\n";
 	exit(-1);
 }
 
 // add library
-require_once __DIR__ . '/lib/HttpClient.class.php';
-require_once __DIR__ . '/lib/UrlTable.class.php';
+require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/lib/UrlTable.php';
 include $file;
-if (!class_exists('UrlTableCustom') || !class_exists('UrlParserCustom'))
-{
+
+if (!class_exists('UrlTableCustom') || !class_exists('UrlParserCustom')) {
 	echo "ERROR: Invalid custom file '$file'.\n";
 	echo "Must have defined class 'UrlParserCustom' inherited from 'UrlParser',\n";
 	echo "and class 'UrlTableCustom' inherited from 'UrlTableMySQL'.\n";
@@ -61,24 +58,27 @@ $options['q'] = isset($options['q']) ? intval($options['q']) : 0;
 // create objects
 $ut = new UrlTableCustom;
 $up = new UrlParserCustom($ut);
-$http = new HttpClient($up);
+$http = new \hightman\http\Client($up);
 
 // start url
-if (isset($options['u']))
+if (isset($options['u'])) {
 	$http->get($up->resetUrl($options['u']));
+}
 
 // loop to handle
 $num = 0;
-while ($urls = $ut->getSome($options['n'], $options['p']))
-{
-	if (count($urls) === 0)
+while ($urls = $ut->getSome($options['n'], $options['p'])) {
+	if (count($urls) === 0) {
 		break;
-	$http->get($urls);
+	}
+	$http->mget($urls);
 	$num += count($urls);
-	if ($options['q'] > 0 && $num >= $options['q'])
+	if ($options['q'] > 0 && $num >= $options['q']) {
 		break;
-	if ($num > $options['n'] && ($num % 1000) < $options['n'])
+	}
+	if ($num > $options['n'] && ($num % 1000) < $options['n']) {
 		$up->stat(true);
+	}
 }
 
 // print stats

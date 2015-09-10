@@ -1,0 +1,6 @@
+# ignores
+custom/test.inc.php
+composer.lock
+vendor
+.idea
+

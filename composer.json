@@ -1,0 +1,14 @@
+{
+    "name": "hightman/pspider",
+    "description": "A pure PHP spider framework",
+    "keywords": ["php", "spider", "crawler", "robot"],
+    "homepage": "https://github.com/hightman/pspider/",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=5.4.0",
+        "ext-mysqli": "*",
+        "lib-pcre": "*",
+        "hightman/httpclient": "*"
+    }
+}

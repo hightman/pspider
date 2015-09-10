@@ -1,7 +1,7 @@
 <?php
 /**
  * 多功能字符串工具
- * 
+ *
  * @author hightman <hightman@twomice.net>
  * @link http://www.hightman.cn/
  * @copyright Copyright &copy; 2008-2013 Twomice Studio
@@ -27,8 +27,9 @@ class StringHelper
 	 */
 	public static function decodeHtml($html)
 	{
-		if (strpos($html, '<') !== false)
+		if (strpos($html, '<') !== false) {
 			$html = strip_tags($html); /* preg_replace('/<.+?>/u', '', $html); */
+		}
 		return html_entity_decode(trim($html), ENT_QUOTES, 'utf-8');
 	}
 
@@ -40,14 +41,15 @@ class StringHelper
 	{
 		if (preg_match('/charset=["\']?([0-9a-zA-Z_-]+)/', $html, $match)
 			&& (strncasecmp($charset, 'gb', 2) || strncasecmp($match[1], 'gb', 2))
-			&& strcasecmp($charset, $match[1]))
-		{
-			if (!strcasecmp($match[1], 'gb2312'))
+			&& strcasecmp($charset, $match[1])) {
+			if (!strcasecmp($match[1], 'gb2312')) {
 				$match[1] = 'gbk';
-			if (function_exists('iconv'))
+			}
+			if (function_exists('iconv')) {
 				return iconv($match[1], $charset . '//IGNORE', $html);
-			if (function_exists('mb_convert_encoding'))
+			} elseif (function_exists('mb_convert_encoding')) {
 				return mb_convert_encoding($html, $charset, $match[1]);
+			}
 		}
 		return $html;
 	}
@@ -55,7 +57,7 @@ class StringHelper
 	/**
 	 * 根据标记快速查找字符串列表
 	 * @param string $buf
-	 * @param array $config 
+	 * @param array $config
 	 * array(
 	 *   array(key1, arg1, arg2, ...),
 	 *   array(key2, arg1, arg2, ...),
@@ -68,9 +70,9 @@ class StringHelper
 		$obj = new StringMatcher($buf);
 		return $obj->finds($config, $error);
 	}
-	
+
 	/**
-	 * 根据标记快速查找字符串	
+	 * 根据标记快速查找字符串
 	 * @param string $buf
 	 * @return string 返回最后两个标记之间的内容，找不到返回 null
 	 * @see StringMatcher::find
@@ -91,10 +93,10 @@ class StringHelper
 	 */
 	public static function contains($buf, $tokens)
 	{
-		foreach ($tokens as $token)
-		{
-			if (strpos($buf, $token) !== false)
+		foreach ($tokens as $token) {
+			if (strpos($buf, $token) !== false) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -107,7 +109,7 @@ class StringMatcher
 {
 	private $_buf, $_pos;
 
-	/** 	 
+	/**
 	 * @param string $buf
 	 */
 	public function __construct($buf)
@@ -124,17 +126,15 @@ class StringMatcher
 	 *   array(key2, arg1, arg2, ...),
 	 * ),
 	 * @param string $error optional reference
-	 * @return array	
+	 * @return array
 	 */
 	public function finds($config, &$error = null)
 	{
 		$ret = array();
-		foreach ($config as $args)
-		{
+		foreach ($config as $args) {
 			$key = array_shift($args);
 			$val = call_user_func_array(array($this, 'find'), $args);
-			if ($val === null || $val === false)
-			{
+			if ($val === null || $val === false) {
 				$error = 'Cannot find `' . $key . '\': ' . implode(' ... ', $args);
 				$pos = strrpos($error, '...');
 				$error = substr_replace($error, '???', $pos, 3);
@@ -148,7 +148,7 @@ class StringMatcher
 	/**
 	 * 根据特征查找字符串，不定参数：
 	 * 起始1，起始2，起始3 ... 结束关键
-	 * 新增支持特殊串 
+	 * 新增支持特殊串
 	 * "$$$..."，表示后面的字符串必须在这个字符串之前，以免跨越太大
 	 * "^^^..."，表示后面的字符串如果在这个串之前就用采用当前串的位置
 	 * @return string 成功返回区间内的字符串并将位置设在本字符串之末，若找不到返回 null
@@ -157,38 +157,38 @@ class StringMatcher
 	{
 		$args = func_get_args();
 		$cnt = count($args);
-		if ($cnt < 2)
+		if ($cnt < 2) {
 			return trigger_error(__CLASS__ . '::find() expects at least 2 parameters, ' . $cnt . ' given', E_USER_WARNING);
-		for ($end = $pre = false, $pos1 = $this->_pos, $i = 0; $i < ($cnt - 1); $i++)
-		{
-			if (substr($args[$i], 0, 3) === '$$$')
+		}
+		for ($end = $pre = false, $pos1 = $this->_pos, $i = 0; $i < ($cnt - 1); $i++) {
+			if (substr($args[$i], 0, 3) === '$$$') {
 				$end = strpos($this->_buf, substr($args[$i], 3), $pos1);
-			else if (substr($args[$i], 0, 3) === '^^^')
+			} elseif (substr($args[$i], 0, 3) === '^^^') {
 				$pre = strpos($this->_buf, substr($args[$i], 3), $pos1);
-			else
-			{
+			} else {
 				$pos1 = strpos($this->_buf, $args[$i], $pos1);
-				if ($pos1 === false)
+				if ($pos1 === false) {
 					return null;
-				if ($end !== false && $pos1 > $end)
+				} elseif ($end !== false && $pos1 > $end) {
 					return '';
-				if ($pre !== false)
-				{
-					if ($pos1 > $pre)
+				}
+				if ($pre !== false) {
+					if ($pos1 > $pre) {
 						$pos1 = $pre;
+					}
 					$pre = false;
 				}
 				$pos1 += strlen($args[$i]);
 			}
 		}
-		if (($pos2 = strpos($this->_buf, $args[$i], $pos1)) !== false)
-		{
-			if ($end !== false && $pos2 > $end)
+		if (($pos2 = strpos($this->_buf, $args[$i], $pos1)) !== false) {
+			if ($end !== false && $pos2 > $end) {
 				return '';
-			if ($pre !== false)
-			{
-				if ($pos2 > $pre)
+			}
+			if ($pre !== false) {
+				if ($pos2 > $pre) {
 					$pos2 = $pre;
+				}
 				$pre = false;
 			}
 			$this->_pos = $pos2;
@@ -205,8 +205,7 @@ class StringMatcher
 	public function seek($offset, $whence = SEEK_CUR)
 	{
 		$offset = intval($offset);
-		switch ($whence)
-		{
+		switch ($whence) {
 			case SEEK_SET:
 				$this->_pos = $offset;
 				break;
@@ -221,4 +220,3 @@ class StringMatcher
 		return $this->_pos;
 	}
 }
-

@@ -1,16 +1,23 @@
 <?php
 /**
  * pspider - custom template file
- * 
+ *
  * @author hightman <hightman@twomice.net>
  * @link http://www.hightman.cn/
  * @copyright Copyright &copy; 2008-2013 Twomice Studio
  */
+
+use hightman\http\Response;
+use hightman\http\Request;
+
 /// --- custom 并发抓取数量
 define('PSP_NUM_PARALLEL', 5);
 
 /// --- custom 同一 URL 连续抓取间隔
 define('PSP_CRAWL_PERIOD', 3600);
+
+/// --- Adding StringHelper on need
+/// require_once __DIR__ . '/../lib/StringHelper.php';
 
 /**
  * 设置 MySQL 参数，要求带有 _urls 表，并采用以下结构：
@@ -50,11 +57,10 @@ class UrlParserCustom extends UrlParser
 	/**
 	 * 在这个方法内添加抓取内容解析处理代码
 	 */
-	public function parse($res, $req, $key)
+	public function parse(Response $res, Request $req, $key)
 	{
 		parent::parse($res, $req, $key);
-		if ($res->status === 200)
-		{
+		if ($res->status === 200) {
 			/// --- custom code BEGIN ---
 			echo "PROCESSING: " . $req->getUrl() . "\n";
 			/// --- custom code END ---
