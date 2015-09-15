@@ -217,6 +217,7 @@ class UrlParser implements ParseInterface
 	private $_followExternal;
 	private $_disallowDomain, $_allowDomain, $_disallow, $_allow;
 	private $_allowRank;
+	private $_nofollow;
 	private $_disallowExt = array(
 		'.tar' => true, '.gz' => true, '.tgz' => true, '.zip' => true, '.Z' => true, '.7z' => true,
 		'.rpm' => true, '.deb' => true, '.ps' => true, '.dvi' => true, '.pdf' => true, '.smi' => true,
@@ -274,6 +275,7 @@ class UrlParser implements ParseInterface
 		$this->_disallow = array();
 		$this->_allow = array();
 		$this->_allowRank = array();
+		$this->_nofollow = array();
 	}
 
 	/**
@@ -311,12 +313,16 @@ class UrlParser implements ParseInterface
 	/**
 	 * @param string $rule 允许的 URL 规则，支持正则表达式
 	 * @param int $rank 匹配此规则的 URL 的权重值
+	 * @param boolean $follow 是否跟随分析此规则页面中的链接
 	 */
-	public function allow($rule, $rank = null)
+	public function allow($rule, $rank = null, $follow = true)
 	{
 		$this->saveMatchRule($this->_allow, $rule);
 		if ($rank !== null) {
 			$this->_allowRank[$rule] = intval($rank);
+		}
+		if (!$follow) {
+			$this->saveMatchRule($this->_nofollow, $rule);
 		}
 	}
 
@@ -376,11 +382,12 @@ class UrlParser implements ParseInterface
 	public function parse(Response $res, Request $req, $key)
 	{
 		// update url
-		if ($this->_ut->updateUrl($req->getRawUrl(), $res->status)) {
+		$rawUrl = $req->getRawUrl();
+		if ($this->_ut->updateUrl($rawUrl, $res->status)) {
 			$this->_numUpdate++;
 		}
-		// parse body
-		if ($res->status === 200) {
+		// parse url from body
+		if ($res->status === 200 && $this->isFollowUrl($rawUrl)) {
 			// get baseUrl
 			$baseUrl = $req->getUrl();
 			if (preg_match('/<base\s+href=[\'"]?(.*?)[\s\'">]/i', $res->body, $match)) {
@@ -398,7 +405,7 @@ class UrlParser implements ParseInterface
 					$this->processUrl($url, $baseUrl, $res->url);
 				}
 			}
-		} else if ($res->status === 301 || $res->status === 302) {
+		} elseif ($res->status === 301 || $res->status === 302) {
 			$url = $this->resetUrl($res->getHeader('location'), $req->getUrl());
 			$res->setHeader('location', $url); // overwrite formated url
 			// save url for permanent redirection
@@ -504,6 +511,15 @@ class UrlParser implements ParseInterface
 			$url = substr($url, 0, 8) . implode('/', $parts);
 		}
 		return $url;
+	}
+
+	/**
+	 * @param string $url
+	 * @return boolean 是否分析处理当前 URL 内容中的链接
+	 */
+	protected function isFollowUrl($url)
+	{
+		return !$this->isMatchRule($this->_nofollow, $url);
 	}
 
 	/**

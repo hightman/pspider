@@ -72,6 +72,8 @@ class UrlParserCustom extends UrlParser
 	 * followExternal()
 	 * allowDomain(), disallowDomain()
 	 * allow(), disallow(), disallowExt()
+	 *
+	 * 注意：allow() 支持第三在数指定此规则下的页面是否跟随分析
 	 */
 	public function defaultFilter()
 	{
@@ -80,5 +82,15 @@ class UrlParserCustom extends UrlParser
 		$this->followExternal(false);
 		$this->disallow('.php?q=');
 		/// --- custom filter END ---
+	}
+
+	/**
+	 * 在这个方法内定义是否分析处理该 url 内容中的链接
+	 * @param string $url
+	 * @return boolean
+	 */
+	protected function isFollowUrl($url)
+	{
+		return parent::isFollowUrl($url);
 	}
 }
