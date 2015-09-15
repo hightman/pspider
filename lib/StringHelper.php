@@ -138,7 +138,8 @@ class StringMatcher
 				$error = 'Cannot find `' . $key . '\': ' . implode(' ... ', $args);
 				$pos = strrpos($error, '...');
 				$error = substr_replace($error, '???', $pos, 3);
-				return false;
+				continue;
+				//return false;
 			}
 			$ret[$key] = $val;
 		}
